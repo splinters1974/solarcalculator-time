@@ -3352,8 +3352,10 @@
     doc.text('Break-Even Analysis: Cumulative Savings vs Initial Investment', PW / 2, chartY, { align: 'center' });
     chartY += 4;
 
-    // Ensure SF chart is shown before capture — wait for Chart.js to finish rendering
-    buildChart('selffunded', r.totalCost, r.yearlySavings, r.paybackYear || 30, null, null);
+    // Build PPA comparison chart (two lines) for page 1 and capture
+    const r1 = calculationData.results;
+    const livePpa1 = livePpaData;
+    buildChart('ppa', r1.totalCost, r1.yearlySavings, r1.paybackYear || 30, livePpa1.yearlySavings, livePpa1.contractYears);
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const chartImg = document.getElementById('savingsChart').toDataURL('image/png');
     const chartH   = 58;
@@ -3533,13 +3535,11 @@
     T('bold', 9, BLUE);
     doc.text('30-Year Cumulative Savings: Self-Funded vs PPA', PW / 2, chartY, { align: 'center' });
     chartY += 4;
-    // Build PPA-mode chart and capture it — wait for Chart.js to finish rendering
+    // Build SF single-line chart for page 2 and capture
     const r2 = calculationData.results;
-    buildChart('ppa', r2.totalCost, r2.yearlySavings, r2.paybackYear || 30, ppa.yearlySavings, ppa.contractYears);
+    buildChart('selffunded', r2.totalCost, r2.yearlySavings, r2.paybackYear || 30, null, null);
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const chartImg = document.getElementById('savingsChart').toDataURL('image/png');
-    // Restore SF chart
-    buildChart('selffunded', r2.totalCost, r2.yearlySavings, r2.paybackYear || 30, null, null);
     doc.addImage(chartImg, 'PNG', ML, chartY, CW, 58);
     chartY += 63;
 
