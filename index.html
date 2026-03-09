@@ -2226,6 +2226,9 @@
     btn.disabled = true;
     txt.textContent = 'Sending\u2026';
 
+    // Close modal immediately so user isn't left waiting
+    document.getElementById('emailModal').style.display = 'none';
+
     const systemSize = calculationData.results.systemSizeKw.toFixed(2);
     const reportDate = calculationData.date;
     const region     = calculationData.inputs.region;
