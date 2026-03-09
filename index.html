@@ -843,17 +843,21 @@
       min-width: 0;
     }
     .gantt-months-row {
-      display: grid;
+      position: relative;
       margin-bottom: 6px;
-      padding-left: 148px;
+      margin-left: 148px;
+      height: 18px;
     }
     .gantt-month-label {
+      position: absolute;
       font-size: 0.58rem;
       color: var(--text-dim);
       font-family: 'JetBrains Mono', monospace;
-      text-align: center;
-      border-left: 1px solid rgba(255,255,255,0.04);
-      padding: 2px 0;
+      text-align: left;
+      padding: 2px 0 2px 3px;
+      transform: none;
+      white-space: nowrap;
+      border-left: 1px solid rgba(255,255,255,0.07);
     }
     .gantt-row {
       display: grid;
@@ -881,6 +885,14 @@
     .gantt-bar-area {
       position: relative;
       height: 28px;
+    }
+    .gantt-grid-line {
+      position: absolute;
+      top: -4px;
+      bottom: -4px;
+      width: 1px;
+      background: rgba(255,255,255,0.05);
+      pointer-events: none;
     }
     .gantt-bar {
       position: absolute;
@@ -2898,14 +2910,13 @@
     const cols = totalMonths;
     const grid = document.getElementById('ganttGrid');
 
-    // Month header row
+    // Month boundary labels — absolutely positioned so M1=0%, M2=(1/cols)*100%, etc.
+    // Each label sits at the left edge of its month, matching bar positions exactly.
     let monthLabels = '';
     for (let m = 0; m < cols; m++) {
-      monthLabels += `<div class="gantt-month-label">M${m + 1}</div>`;
+      const leftPct = (m / cols) * 100;
+      monthLabels += `<div class="gantt-month-label" style="left:${leftPct}%;width:${(1/cols)*100}%">M${m + 1}</div>`;
     }
-
-    // Find go-live column (last column)
-    const goLiveCol = totalMonths - 1;
 
     let rows = '';
     phases.forEach(p => {
@@ -2913,10 +2924,16 @@
       const widthPct = (p.dur / cols) * 100;
       const isGoLive = p.key === 'commission';
       const barClass = isGoLive ? 'go-live-bar' : p.color;
+      // Vertical grid lines in bar area — one per month boundary
+      let gridLines = '';
+      for (let m = 0; m <= cols; m++) {
+        gridLines += `<div class="gantt-grid-line" style="left:${(m/cols)*100}%"></div>`;
+      }
       rows += `
         <div class="gantt-row" style="grid-template-columns: 148px 1fr">
           <div class="gantt-label"><strong>${p.label}</strong>${p.dur === 1 ? '~4 wks' : '~' + (p.dur * 4) + ' wks'}</div>
           <div class="gantt-bar-area">
+            ${gridLines}
             ${isGoLive ? `<div class="gantt-go-live-line" style="left:${((p.start + p.dur) / cols) * 100}%"></div><div class="gantt-go-live-label" style="left:${((p.start + p.dur) / cols) * 100}%">GO-LIVE</div>` : ''}
             <div class="gantt-bar ${barClass}" style="left:${leftPct}%;width:${widthPct}%">${p.dur >= 2 ? p.label.split(' ')[0] : ''}</div>
           </div>
@@ -2924,9 +2941,7 @@
     });
 
     grid.innerHTML = `
-      <div class="gantt-months-row" style="grid-template-columns: 148px repeat(${cols}, 1fr)">
-        <div></div>${monthLabels}
-      </div>
+      <div class="gantt-months-row">${monthLabels}</div>
       ${rows}`;
 
     // Legend
