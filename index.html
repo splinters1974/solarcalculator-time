@@ -2982,7 +2982,7 @@
     }
 
     // Page 1: Self-Funded
-    const doc = await buildSelfFundedPDFDoc();
+    const doc = await buildSelfFundedPDFDoc(livePpaData);
 
     // Page 2: PPA — add a new page and draw PPA content directly into the same doc
     doc.addPage();
@@ -3215,11 +3215,17 @@
     doc.text('Kinetic Energy Consulting  |  martynsheridan621@gmail.com  |  07872 015769  |  Timeline is indicative — actual durations subject to site, council, and DNO variables.', ML, PH - 6);
   }
 
-  async function buildSelfFundedPDFDoc() {
+  async function buildSelfFundedPDFDoc(ppaDataArg) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const r   = calculationData.results;
     const inp = calculationData.inputs;
+    // Ensure ppa data is available for the comparison chart on this page
+    if (!ppaDataArg) {
+      const contractYears = parseInt(document.getElementById('ppaContractLength').value) || 20;
+      const ppaRate = getPPARate(inp.region, r.systemSizeKw, contractYears, inp.roofType);
+      ppaDataArg = computePPA(ppaRate, contractYears);
+    }
 
     const PW = 210, PH = 297;
     const ML = 14, MR = 14, CW = PW - ML - MR;
@@ -3354,7 +3360,7 @@
 
     // Build PPA comparison chart (two lines) for page 1 and capture
     const r1 = calculationData.results;
-    const livePpa1 = livePpaData;
+    const livePpa1 = ppaDataArg;
     buildChart('ppa', r1.totalCost, r1.yearlySavings, r1.paybackYear || 30, livePpa1.yearlySavings, livePpa1.contractYears);
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const chartImg = document.getElementById('savingsChart').toDataURL('image/png');
