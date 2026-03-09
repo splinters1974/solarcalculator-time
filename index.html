@@ -2966,7 +2966,7 @@
 
   async function downloadPDF() {
     if (!calculationData) return;
-
+    try {
     // Always produce a 2-page PDF: page 1 = Self-Funded, page 2 = PPA
     // Ensure ppaData is available — compute on the fly if user hasn't visited PPA tab
     let livePpaData = ppaData;
@@ -2993,6 +2993,7 @@
     drawTimelinePDFPage(doc);
 
     doc.save('Solar-Proposal-' + calculationData.date.replace(/\//g, '-') + '.pdf');
+    } catch(e) { console.error('PDF generation error:', e); }
   }
 
   function drawTimelinePDFPage(doc) {
@@ -3220,12 +3221,6 @@
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const r   = calculationData.results;
     const inp = calculationData.inputs;
-    // Ensure ppa data is available for the comparison chart on this page
-    if (!ppaDataArg) {
-      const contractYears = parseInt(document.getElementById('ppaContractLength').value) || 20;
-      const ppaRate = getPPARate(inp.region, r.systemSizeKw, contractYears, inp.roofType);
-      ppaDataArg = computePPA(ppaRate, contractYears);
-    }
 
     const PW = 210, PH = 297;
     const ML = 14, MR = 14, CW = PW - ML - MR;
@@ -3358,11 +3353,9 @@
     doc.text('Break-Even Analysis: Cumulative Savings vs Initial Investment', PW / 2, chartY, { align: 'center' });
     chartY += 4;
 
-    // Build PPA comparison chart (two lines) for page 1 and capture
-    const r1 = calculationData.results;
-    const livePpa1 = ppaDataArg;
-    buildChart('ppa', r1.totalCost, r1.yearlySavings, r1.paybackYear || 30, livePpa1.yearlySavings, livePpa1.contractYears);
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    // Build SF break-even chart (single line) for page 1 and capture
+    buildChart('selffunded', r.totalCost, r.yearlySavings, r.paybackYear || 30, null, null);
+    await new Promise(resolve => setTimeout(resolve, 120));
     const chartImg = document.getElementById('savingsChart').toDataURL('image/png');
     const chartH   = 58;
     doc.addImage(chartImg, 'PNG', ML, chartY, CW, chartH);
@@ -3544,12 +3537,12 @@
     // Build PPA two-line comparison chart for page 2 and capture
     const r2 = calculationData.results;
     buildChart('ppa', r2.totalCost, r2.yearlySavings, r2.paybackYear || 30, ppa.yearlySavings, ppa.contractYears);
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    const chartImg = document.getElementById('savingsChart').toDataURL('image/png');
+    await new Promise(resolve => setTimeout(resolve, 120));
+    const chartImg2 = document.getElementById('savingsChart').toDataURL('image/png');
+    doc.addImage(chartImg2, 'PNG', ML, chartY, CW, 58);
+    chartY += 63;
     // Restore SF chart after capture
     buildChart('selffunded', r2.totalCost, r2.yearlySavings, r2.paybackYear || 30, null, null);
-    doc.addImage(chartImg, 'PNG', ML, chartY, CW, 58);
-    chartY += 63;
 
     // ASSUMPTIONS
     doc.setDrawColor(...LGREY); doc.setLineWidth(0.4); doc.line(ML, chartY, PW - MR, chartY);
