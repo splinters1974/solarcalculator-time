@@ -3541,11 +3541,13 @@
     T('bold', 9, BLUE);
     doc.text('30-Year Cumulative Savings: Self-Funded vs PPA', PW / 2, chartY, { align: 'center' });
     chartY += 4;
-    // Build SF single-line chart for page 2 and capture
+    // Build PPA two-line comparison chart for page 2 and capture
     const r2 = calculationData.results;
-    buildChart('selffunded', r2.totalCost, r2.yearlySavings, r2.paybackYear || 30, null, null);
+    buildChart('ppa', r2.totalCost, r2.yearlySavings, r2.paybackYear || 30, ppa.yearlySavings, ppa.contractYears);
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const chartImg = document.getElementById('savingsChart').toDataURL('image/png');
+    // Restore SF chart after capture
+    buildChart('selffunded', r2.totalCost, r2.yearlySavings, r2.paybackYear || 30, null, null);
     doc.addImage(chartImg, 'PNG', ML, chartY, CW, 58);
     chartY += 63;
 
