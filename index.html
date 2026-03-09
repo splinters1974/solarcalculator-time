@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -841,14 +840,15 @@
     }
     .gantt-grid {
       width: 100%;
+      min-width: 0;
     }
     .gantt-months-row {
       display: grid;
       margin-bottom: 6px;
-      padding-left: 180px;
+      padding-left: 148px;
     }
     .gantt-month-label {
-      font-size: 0.62rem;
+      font-size: 0.58rem;
       color: var(--text-dim);
       font-family: 'JetBrains Mono', monospace;
       text-align: center;
@@ -862,10 +862,11 @@
       min-height: 36px;
     }
     .gantt-label {
-      font-size: 0.73rem;
+      font-size: 0.68rem;
       color: var(--text-muted);
-      padding-right: 12px;
-      width: 180px;
+      padding-right: 8px;
+      width: 148px;
+      min-width: 148px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -874,7 +875,7 @@
     .gantt-label strong {
       display: block;
       color: var(--text);
-      font-size: 0.76rem;
+      font-size: 0.71rem;
       margin-bottom: 1px;
     }
     .gantt-bar-area {
@@ -2842,18 +2843,18 @@
       planningEnd = 2 + 4;
     }
 
-    // 5. Contract & Legal — after survey (M3), 2 months, or after planning if applicable
+    // 5. Contract & Legal — after survey (M3), 1 month self-funded / 2 months PPA, or after planning if applicable
     const contractStart = Math.max(3, planningEnd);
-    const contractDur = 2;
+    const contractDur = fundingMode === 'ppa' ? 2 : 1;
     phases.push({ key: 'contract', label: 'Contract & Legal', start: contractStart, dur: contractDur, color: 'amber' });
 
-    // 6. Funder DD — PPA only, 2 months, runs IN PARALLEL with contract (same start)
+    // 6. Funder DD — PPA only, 1 month, runs IN PARALLEL with contract (same start)
     let fundingEnd = contractStart + contractDur;
     if (fundingMode === 'ppa') {
       const fdStart = contractStart;
-      const fdDur = 2; // runs alongside contract, both 2 months
+      const fdDur = 1; // 1 month, runs alongside contract (contract=2 months, DD=1 month)
       phases.push({ key: 'funderdd', label: 'Funder Due Diligence', start: fdStart, dur: fdDur, color: 'teal' });
-      fundingEnd = fdStart + fdDur; // same end as contract since both = 2 months
+      fundingEnd = contractStart + contractDur; // end = contract end (2 months)
     }
 
     // 7. Installation — after contract/funder AND after DNO
@@ -2913,7 +2914,7 @@
       const isGoLive = p.key === 'commission';
       const barClass = isGoLive ? 'go-live-bar' : p.color;
       rows += `
-        <div class="gantt-row" style="grid-template-columns: 160px 1fr">
+        <div class="gantt-row" style="grid-template-columns: 148px 1fr">
           <div class="gantt-label"><strong>${p.label}</strong>${p.dur === 1 ? '~4 wks' : '~' + (p.dur * 4) + ' wks'}</div>
           <div class="gantt-bar-area">
             ${isGoLive ? `<div class="gantt-go-live-line" style="left:${((p.start + p.dur) / cols) * 100}%"></div><div class="gantt-go-live-label" style="left:${((p.start + p.dur) / cols) * 100}%">GO-LIVE</div>` : ''}
@@ -2923,7 +2924,7 @@
     });
 
     grid.innerHTML = `
-      <div class="gantt-months-row" style="grid-template-columns: 160px repeat(${cols}, 1fr)">
+      <div class="gantt-months-row" style="grid-template-columns: 148px repeat(${cols}, 1fr)">
         <div></div>${monthLabels}
       </div>
       ${rows}`;
@@ -2978,138 +2979,15 @@
 
   function drawTimelinePDFPage(doc) {
     if (!calculationData) return;
-    const { jsPDF } = window.jspdf;
     const PW = 210, PH = 297;
-    const ML = 14, MR = 14, MT = 14;
-    const AMBER = [245, 158, 11];
-    const SKY   = [56, 189, 248];
-    const GREEN = [52, 211, 153];
-    // White background palette (matches pages 1 & 2 for printing)
+    const ML = 14, MR = 14;
+    const AMBER  = [245, 158, 11];
     const BG     = [255, 255, 255];
-    const LGREY2 = [230, 230, 230];
+    const LGREY2 = [220, 220, 220];
     const DGREY2 = [60, 60, 60];
     const MGREY2 = [120, 120, 120];
-    const SLATE2 = [71, 85, 105];
     const BGBOX  = [248, 250, 252];
     const BGBOX2 = [241, 245, 249];
-
-    const kwp      = calculationData.results.systemSizeKw;
-    const roofType = calculationData.inputs.roofType;
-    const tl       = computeTimeline(kwp, roofType, currentMode);
-    const { phases, totalMonths, goLiveDate, needsNESO } = tl;
-
-    // ── White background
-    doc.setFillColor(...BG);
-    doc.rect(0, 0, PW, PH, 'F');
-
-    // ── Header bar (light grey, matching pages 1&2)
-    doc.setFillColor(245, 247, 250);
-    doc.rect(0, 0, PW, 28, 'F');
-
-    // Top accent stripe — amber only, matching pages 1&2
-    doc.setFillColor(...AMBER);
-    doc.rect(0, 0, PW, 2, 'F');
-
-    // Header text
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.setTextColor(...AMBER);
-    doc.text('PROJECT TIMELINE', ML, 12);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(...MGREY2);
-    doc.text('Kinetic Energy Consulting', ML, 18);
-    doc.text('Generated: ' + calculationData.date, ML, 23);
-
-    // Logo — positioned below the amber stripe (y=5 keeps it inside header, not overlapping border)
-    try {
-      const logoImg = document.querySelector('.logo-area img');
-      if (logoImg && logoImg.src) {
-        doc.addImage(logoImg.src, 'PNG', PW - MR - 24, 5, 22, 22);
-      }
-    } catch(e) {}
-
-    // Header separator line
-    doc.setDrawColor(...LGREY2);
-    doc.setLineWidth(0.4);
-    doc.line(ML, 28, PW - MR, 28);
-
-    // Summary stats box
-    const statsY = 33;
-    doc.setFillColor(...BGBOX);
-    doc.roundedRect(ML, statsY, PW - ML - MR, 18, 2, 2, 'F');
-    doc.setDrawColor(...AMBER);
-    doc.setLineWidth(0.4);
-    doc.roundedRect(ML, statsY, PW - ML - MR, 18, 2, 2, 'S');
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
-    doc.setTextColor(...MGREY2);
-    doc.text('SYSTEM SIZE', ML + 6, statsY + 6);
-    doc.text('MOUNT TYPE', ML + 52, statsY + 6);
-    doc.text('FUNDING ROUTE', ML + 98, statsY + 6);
-    doc.text('TOTAL DURATION', ML + 130, statsY + 6);
-    doc.text('ESTIMATED GO-LIVE', ML + 158, statsY + 6);
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(180, 100, 0);
-    doc.text(kwp.toFixed(0) + ' kWp', ML + 6, statsY + 13);
-    doc.setTextColor(...DGREY2);
-    const mountLabel = { pitched: 'Pitched Roof', flat: 'Flat Roof', ground: 'Ground Mount', carport: 'Carport' }[roofType] || roofType;
-    doc.text(mountLabel, ML + 52, statsY + 13);
-    doc.text(currentMode === 'ppa' ? 'PPA / Third-Party' : 'Self-Funded (Capex)', ML + 98, statsY + 13);
-    doc.setTextColor(180, 100, 0);
-    doc.text(totalMonths + ' months', ML + 130, statsY + 13);
-    doc.setTextColor(0, 120, 80);
-    doc.text(goLiveDate.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }), ML + 158, statsY + 13);
-
-    // NESO Warning (if needed)
-    let currentY = statsY + 23;
-    if (needsNESO) {
-      doc.setFillColor(255, 248, 230);
-      doc.roundedRect(ML, currentY, PW - ML - MR, 16, 2, 2, 'F');
-      doc.setDrawColor(...AMBER);
-      doc.setLineWidth(0.4);
-      doc.roundedRect(ML, currentY, PW - ML - MR, 16, 2, 2, 'S');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.5);
-      doc.setTextColor(160, 80, 0);
-      doc.text('! LARGE SYSTEM - NESO INVOLVEMENT REQUIRED', ML + 5, currentY + 6);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6.8);
-      doc.setTextColor(120, 70, 0);
-      doc.text('This system exceeds 5MWp. Grid connection moves from DNO to NESO (National Energy System Operator), adding approx. 6 months to the approval timeline.', ML + 5, currentY + 11);
-      currentY += 21;
-    }
-
-    // Gantt chart
-    const ganttY = currentY + 4;
-    const labelW = 44;
-    const barAreaW = PW - ML - MR - labelW - 4;
-    const rowH = 10;
-    const barH = 6;
-    const cols = totalMonths;
-
-    // Month header row background
-    doc.setFillColor(...BGBOX2);
-    doc.rect(ML + labelW + 4, ganttY - 4, barAreaW, 7, 'F');
-
-    // Month headers
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(5.5);
-    doc.setTextColor(...MGREY2);
-    for (let m = 0; m < cols; m++) {
-      const x = ML + labelW + 4 + (m / cols) * barAreaW;
-      const colW = barAreaW / cols;
-      doc.text('M' + (m + 1), x + colW / 2, ganttY, { align: 'center' });
-      // Subtle vertical grid line
-      doc.setDrawColor(200, 200, 200);
-      doc.setLineWidth(0.1);
-      doc.line(x, ganttY + 2, x, ganttY + 2 + phases.length * rowH + 2);
-    }
-
-    // Phase rows — print-friendly colours
     const colorMap = {
       amber:  { fill: [255, 237, 180], stroke: [200, 130, 10],  text: [140, 80, 0]   },
       sky:    { fill: [186, 230, 253], stroke: [14, 165, 233],  text: [3, 105, 161]  },
@@ -3119,80 +2997,202 @@
       teal:   { fill: [153, 246, 228], stroke: [13, 148, 136],  text: [15, 118, 110] },
     };
 
-    phases.forEach((p, i) => {
-      const rowY = ganttY + 4 + i * rowH;
-      const isGoLive = p.key === 'commission';
-      const cm = isGoLive ? colorMap.green : (colorMap[p.color] || colorMap.amber);
+    const kwp      = calculationData.results.systemSizeKw;
+    const roofType = calculationData.inputs.roofType;
 
-      // Alternating row background
-      if (i % 2 === 0) {
-        doc.setFillColor(250, 251, 252);
-        doc.rect(ML, rowY - 1, PW - ML - MR, rowH, 'F');
+    // Compute both timelines
+    const tlSF  = computeTimeline(kwp, roofType, 'selffunded');
+    const tlPPA = computeTimeline(kwp, roofType, 'ppa');
+    const needsNESO = tlSF.needsNESO;
+
+    // ── White background
+    doc.setFillColor(...BG);
+    doc.rect(0, 0, PW, PH, 'F');
+
+    // ── Header bar (light grey)
+    doc.setFillColor(245, 247, 250);
+    doc.rect(0, 0, PW, 26, 'F');
+
+    // Top accent stripe
+    doc.setFillColor(...AMBER);
+    doc.rect(0, 0, PW, 2, 'F');
+
+    // Header text
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(...AMBER);
+    doc.text('PROJECT TIMELINE', ML, 11);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(...MGREY2);
+    doc.text('Kinetic Energy Consulting  |  From Initial Enquiry to Go-Live', ML, 17);
+    doc.text('Generated: ' + calculationData.date, ML, 22);
+
+    // Logo — stays within header, does not overlap amber stripe or orange border
+    try {
+      const logoImg = document.querySelector('.logo-area img');
+      if (logoImg && logoImg.src) {
+        doc.addImage(logoImg.src, 'PNG', PW - MR - 20, 4, 16, 16);
       }
+    } catch(e) {}
 
-      // Row label — dark text for white background
+    // Header separator line
+    doc.setDrawColor(...LGREY2);
+    doc.setLineWidth(0.4);
+    doc.line(ML, 26, PW - MR, 26);
+
+    let currentY = 30;
+
+    // NESO Warning (if needed)
+    if (needsNESO) {
+      doc.setFillColor(255, 248, 230);
+      doc.roundedRect(ML, currentY, PW - ML - MR, 14, 2, 2, 'F');
+      doc.setDrawColor(...AMBER);
+      doc.setLineWidth(0.4);
+      doc.roundedRect(ML, currentY, PW - ML - MR, 14, 2, 2, 'S');
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(5.8);
-      doc.setTextColor(...DGREY2);
-      const shortLabel = p.label.length > 24 ? p.label.substring(0, 23) + '...' : p.label;
-      doc.text(shortLabel, ML, rowY + barH / 2 + 1.5);
+      doc.setFontSize(7);
+      doc.setTextColor(160, 80, 0);
+      doc.text('! LARGE SYSTEM — NESO INVOLVEMENT REQUIRED', ML + 5, currentY + 5.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.2);
+      doc.setTextColor(120, 70, 0);
+      doc.text('This system exceeds 5MWp. Grid connection escalates to NESO, adding approx. 6 months to the timeline.', ML + 5, currentY + 10.5);
+      currentY += 18;
+    }
 
-      // Bar
-      const barX = ML + labelW + 4 + (p.start / cols) * barAreaW;
-      const barW = Math.max(3, (p.dur / cols) * barAreaW);
-      doc.setFillColor(...cm.fill);
-      doc.roundedRect(barX, rowY, barW, barH, 1, 1, 'F');
-      doc.setDrawColor(...cm.stroke);
-      doc.setLineWidth(isGoLive ? 0.5 : 0.3);
-      doc.roundedRect(barX, rowY, barW, barH, 1, 1, 'S');
+    // Helper: draw a gantt section
+    function drawGantt(tl, title, accentColor, startY) {
+      const { phases, totalMonths, goLiveDate } = tl;
+      const labelW = 42;
+      const barAreaW = PW - ML - MR - labelW - 4;
+      const rowH = 9;
+      const barH = 5.5;
+      const cols = totalMonths;
 
-      // Bar label if wide enough
-      if (barW > 14) {
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(4.8);
-        doc.setTextColor(...cm.text);
-        const durLabel = p.dur === 1 ? '~4wk' : '~' + (p.dur * 4) + 'wk';
-        doc.text(durLabel, barX + barW / 2, rowY + barH / 2 + 1.5, { align: 'center' });
+      // Section title bar
+      const lightBg = accentColor.map(v => Math.min(255, v + 180));
+      doc.setFillColor(...lightBg);
+      doc.rect(ML, startY, PW - ML - MR, 8, 'F');
+      doc.setFillColor(...accentColor);
+      doc.rect(ML, startY, 3, 8, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(...accentColor);
+      doc.text(title, ML + 6, startY + 5.5);
+
+      // Duration + go-live on the right
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.5);
+      doc.setTextColor(...MGREY2);
+      const summaryTxt = 'Total: ' + totalMonths + ' months  |  Est. Go-Live: ' + goLiveDate.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+      doc.text(summaryTxt, PW - MR, startY + 5.5, { align: 'right' });
+
+      let gy = startY + 12;
+
+      // Month header background
+      doc.setFillColor(...BGBOX2);
+      doc.rect(ML + labelW + 4, gy - 4, barAreaW, 6.5, 'F');
+
+      // Month labels + grid lines
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(5);
+      doc.setTextColor(...MGREY2);
+      for (let m = 0; m < cols; m++) {
+        const x = ML + labelW + 4 + (m / cols) * barAreaW;
+        const cw = barAreaW / cols;
+        doc.text('M' + (m + 1), x + cw / 2, gy, { align: 'center' });
+        doc.setDrawColor(210, 210, 210);
+        doc.setLineWidth(0.1);
+        doc.line(x, gy + 1.5, x, gy + 1.5 + phases.length * rowH);
       }
 
-      // Go-live marker line
-      if (isGoLive) {
-        const glX = ML + labelW + 4 + ((p.start + p.dur) / cols) * barAreaW;
-        doc.setDrawColor(16, 185, 129);
-        doc.setLineWidth(0.6);
-        doc.line(glX, ganttY - 4, glX, rowY + barH + 2);
+      // Phase rows
+      phases.forEach((p, i) => {
+        const rowY = gy + 3 + i * rowH;
+        const isGoLive = p.key === 'commission';
+        const cm = isGoLive ? colorMap.green : (colorMap[p.color] || colorMap.amber);
+
+        if (i % 2 === 0) {
+          doc.setFillColor(250, 251, 252);
+          doc.rect(ML, rowY - 1, PW - ML - MR, rowH, 'F');
+        }
+
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(5);
-        doc.setTextColor(4, 120, 87);
-        doc.text('GO-LIVE', glX + 1, ganttY - 1);
-      }
-    });
+        doc.setFontSize(5.4);
+        doc.setTextColor(...DGREY2);
+        const lbl = p.label.length > 22 ? p.label.substring(0, 21) + '…' : p.label;
+        doc.text(lbl, ML, rowY + barH / 2 + 1);
+
+        const barX = ML + labelW + 4 + (p.start / cols) * barAreaW;
+        const barW = Math.max(2.5, (p.dur / cols) * barAreaW);
+        doc.setFillColor(...cm.fill);
+        doc.roundedRect(barX, rowY, barW, barH, 0.8, 0.8, 'F');
+        doc.setDrawColor(...cm.stroke);
+        doc.setLineWidth(isGoLive ? 0.5 : 0.25);
+        doc.roundedRect(barX, rowY, barW, barH, 0.8, 0.8, 'S');
+
+        if (barW > 12) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(4.2);
+          doc.setTextColor(...cm.text);
+          doc.text(p.dur === 1 ? '~4wk' : '~' + (p.dur * 4) + 'wk', barX + barW / 2, rowY + barH / 2 + 1.3, { align: 'center' });
+        }
+
+        if (isGoLive) {
+          const glX = ML + labelW + 4 + ((p.start + p.dur) / cols) * barAreaW;
+          doc.setDrawColor(16, 185, 129);
+          doc.setLineWidth(0.5);
+          doc.line(glX, gy - 4, glX, rowY + barH + 1);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(4.5);
+          doc.setTextColor(4, 120, 87);
+          doc.text('GO-LIVE', glX + 1, gy - 1);
+        }
+      });
+
+      return gy + 3 + phases.length * rowH + 4;
+    }
+
+    // Draw Self-Funded gantt
+    currentY = drawGantt(tlSF, 'Self-Funded (Capex) — Project Timeline', [0, 90, 160], currentY);
+    currentY += 6;
+
+    // Divider
+    doc.setDrawColor(...LGREY2);
+    doc.setLineWidth(0.3);
+    doc.line(ML, currentY, PW - MR, currentY);
+    currentY += 6;
+
+    // Draw PPA gantt
+    currentY = drawGantt(tlPPA, 'PPA (Power Purchase Agreement) — Project Timeline', [0, 130, 100], currentY);
+    currentY += 8;
 
     // DNO/NESO explanatory note
-    const noteY = ganttY + 6 + phases.length * rowH + 8;
+    const noteH = 20;
     doc.setFillColor(239, 246, 255);
-    doc.roundedRect(ML, noteY, PW - ML - MR, 22, 2, 2, 'F');
+    doc.roundedRect(ML, currentY, PW - ML - MR, noteH, 2, 2, 'F');
     doc.setDrawColor(14, 165, 233);
     doc.setLineWidth(0.3);
-    doc.roundedRect(ML, noteY, PW - ML - MR, 22, 2, 2, 'S');
+    doc.roundedRect(ML, currentY, PW - ML - MR, noteH, 2, 2, 'S');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
-    doc.setTextColor(3, 105, 161);
-    doc.text('What is the DNO / NESO?', ML + 5, noteY + 7);
-    doc.setFont('helvetica', 'normal');
     doc.setFontSize(6.5);
+    doc.setTextColor(3, 105, 161);
+    doc.text('What is the DNO / NESO?', ML + 5, currentY + 6);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6);
     doc.setTextColor(...DGREY2);
     const dnoLines = doc.splitTextToSize(
       'The DNO (Distribution Network Operator) is your local electricity network company — they approve and manage how your solar system connects to the grid. For systems over 5MWp, responsibility escalates to the NESO (National Energy System Operator), which coordinates connections at national infrastructure level. DNO approval typically takes around 12 weeks; NESO involvement adds a further 6 months or more.',
       PW - ML - MR - 10
     );
-    doc.text(dnoLines, ML + 5, noteY + 13);
+    doc.text(dnoLines, ML + 5, currentY + 12);
 
-    // Footer — amber bar matching pages 1&2
+    // Footer
     doc.setFillColor(...AMBER);
     doc.rect(0, PH - 3, PW, 3, 'F');
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6);
+    doc.setFontSize(5.8);
     doc.setTextColor(...MGREY2);
     doc.text('Kinetic Energy Consulting  |  martynsheridan621@gmail.com  |  07872 015769  |  Timeline is indicative — actual durations subject to site, council, and DNO variables.', ML, PH - 6);
   }
@@ -3271,11 +3271,11 @@
     T('normal', 8, MGREY);
     doc.text('Generated: ' + calculationData.date, PW / 2, 20, { align: 'center' });
 
-    // Logo top-right corner
+    // Logo top-right corner — positioned inside header, clear of amber stripe and border
     try {
       const logoImg = document.querySelector('.logo-area img');
       if (logoImg && logoImg.src) {
-        doc.addImage(logoImg.src, 'PNG', PW - MR - 23, 4, 21, 21);
+        doc.addImage(logoImg.src, 'PNG', PW - MR - 18, 4, 16, 16);
       }
     } catch(e) {}
 
@@ -3468,10 +3468,10 @@
     T('bold', 17, BLACK); doc.text('Industrial & Commercial Solar — PPA Analysis', ML, 13);
     T('normal', 9, SLATE); doc.text('Power Purchase Agreement  —  Indicative Proposal', ML, 20);
     T('normal', 8, MGREY); doc.text('Generated: ' + calculationData.date, PW / 2, 20, { align: 'center' });
-    // Logo top-right corner
+    // Logo top-right corner — positioned inside header, clear of amber stripe and border
     try {
       const logoImg = document.querySelector('.logo-area img');
-      if (logoImg && logoImg.src) { doc.addImage(logoImg.src, 'PNG', PW - MR - 23, 4, 21, 21); }
+      if (logoImg && logoImg.src) { doc.addImage(logoImg.src, 'PNG', PW - MR - 18, 4, 16, 16); }
     } catch(e) {}
     doc.setDrawColor(...LGREY); doc.setLineWidth(0.4); doc.line(ML, 24, PW - MR, 24);
 
