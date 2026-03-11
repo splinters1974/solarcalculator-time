@@ -466,6 +466,11 @@
       color: var(--sky);
       background: var(--sky-dim);
     }
+    .notes-btn:hover {
+      border-color: var(--amber) !important;
+      color: var(--amber) !important;
+      background: rgba(245,158,11,0.08) !important;
+    }
 
     /* ── METRICS GRID ── */
     .metrics-grid {
@@ -770,6 +775,8 @@
       padding: 32px;
       position: relative;
       overflow: hidden;
+      box-sizing: border-box;
+      max-width: 100%;
     }
     .timeline-section::before {
       content: '';
@@ -840,24 +847,19 @@
     }
     .gantt-grid {
       width: 100%;
-      min-width: 0;
     }
     .gantt-months-row {
-      position: relative;
+      display: grid;
       margin-bottom: 6px;
-      margin-left: 148px;
-      height: 18px;
+      padding-left: 150px;
     }
     .gantt-month-label {
-      position: absolute;
-      font-size: 0.58rem;
+      font-size: 0.62rem;
       color: var(--text-dim);
       font-family: 'JetBrains Mono', monospace;
-      text-align: left;
-      padding: 2px 0 2px 3px;
-      transform: none;
-      white-space: nowrap;
-      border-left: 1px solid rgba(255,255,255,0.07);
+      text-align: center;
+      border-left: 1px solid rgba(255,255,255,0.04);
+      padding: 2px 0;
     }
     .gantt-row {
       display: grid;
@@ -866,11 +868,11 @@
       min-height: 36px;
     }
     .gantt-label {
-      font-size: 0.68rem;
+      font-size: 0.73rem;
       color: var(--text-muted);
-      padding-right: 8px;
-      width: 148px;
-      min-width: 148px;
+      padding-right: 10px;
+      width: 150px;
+      min-width: 0;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -879,20 +881,12 @@
     .gantt-label strong {
       display: block;
       color: var(--text);
-      font-size: 0.71rem;
+      font-size: 0.76rem;
       margin-bottom: 1px;
     }
     .gantt-bar-area {
       position: relative;
       height: 28px;
-    }
-    .gantt-grid-line {
-      position: absolute;
-      top: -4px;
-      bottom: -4px;
-      width: 1px;
-      background: rgba(255,255,255,0.05);
-      pointer-events: none;
     }
     .gantt-bar {
       position: absolute;
@@ -1783,6 +1777,10 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
           Email Report
         </button>
+        <button class="download-btn notes-btn" onclick="downloadSupportingNotes()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>
+          Supporting Notes
+        </button>
       </div>
     </div>
 
@@ -2046,7 +2044,7 @@
         <div class="contact-text">This is a rough, hypothetical calculation based on very basic input information. For a more detailed design and accurate costings and savings please contact:</div>
         <div class="contact-person">Martyn Sheridan</div>
         <div class="contact-details">
-          <a href="/cdn-cgi/l/email-protection#a0cdc1d2d4d9ced3c8c5d2c9c4c1ce969291e0c7cdc1c9cc8ec3cfcd"><span class="__cf_email__" data-cfemail="5c313d2e2825322f34392e35383d326a6e6d1c3b313d3530723f3331">[email&#160;protected]</span></a>
+          <a href="/cdn-cgi/l/email-protection#b4d9d5c6c0cddac7dcd1c6ddd0d5da828685f4d3d9d5ddd89ad7dbd9"><span class="__cf_email__" data-cfemail="fe939f8c8a87908d969b8c979a9f90c8cccfbe99939f9792d09d9193">[email&#160;protected]</span></a>
           <span class="contact-divider">·</span>
           <a href="tel:+447872015769">+44 (0) 787 2015769</a>
         </div>
@@ -2225,9 +2223,6 @@
     const txt = document.getElementById('sendBtnText');
     btn.disabled = true;
     txt.textContent = 'Sending\u2026';
-
-    // Close modal immediately so user isn't left waiting
-    document.getElementById('emailModal').style.display = 'none';
 
     const systemSize = calculationData.results.systemSizeKw.toFixed(2);
     const reportDate = calculationData.date;
@@ -2860,16 +2855,16 @@
 
     // 5. Contract & Legal — after survey (M3), 1 month self-funded / 2 months PPA, or after planning if applicable
     const contractStart = Math.max(3, planningEnd);
-    const contractDur = fundingMode === 'ppa' ? 2 : 1;
+    const contractDur = (fundingMode === 'ppa') ? 2 : 1;
     phases.push({ key: 'contract', label: 'Contract & Legal', start: contractStart, dur: contractDur, color: 'amber' });
 
-    // 6. Funder DD — PPA only, 1 month, runs IN PARALLEL with contract (same start)
+    // 6. Funder DD — PPA only, 1 month, runs IN PARALLEL with contract (same start, contract is the longer at 2 months)
     let fundingEnd = contractStart + contractDur;
     if (fundingMode === 'ppa') {
       const fdStart = contractStart;
-      const fdDur = 1; // 1 month, runs alongside contract (contract=2 months, DD=1 month)
+      const fdDur = 1; // 1 month, parallel with contract (contract = 2 months, so contract end governs)
       phases.push({ key: 'funderdd', label: 'Funder Due Diligence', start: fdStart, dur: fdDur, color: 'teal' });
-      fundingEnd = contractStart + contractDur; // end = contract end (2 months)
+      fundingEnd = contractStart + contractDur; // governed by the longer contract phase (2 months)
     }
 
     // 7. Installation — after contract/funder AND after DNO
@@ -2913,13 +2908,14 @@
     const cols = totalMonths;
     const grid = document.getElementById('ganttGrid');
 
-    // Month boundary labels — absolutely positioned so M1=0%, M2=(1/cols)*100%, etc.
-    // Each label sits at the left edge of its month, matching bar positions exactly.
+    // Month header row
     let monthLabels = '';
     for (let m = 0; m < cols; m++) {
-      const leftPct = (m / cols) * 100;
-      monthLabels += `<div class="gantt-month-label" style="left:${leftPct}%;width:${(1/cols)*100}%">M${m + 1}</div>`;
+      monthLabels += `<div class="gantt-month-label">M${m + 1}</div>`;
     }
+
+    // Find go-live column (last column)
+    const goLiveCol = totalMonths - 1;
 
     let rows = '';
     phases.forEach(p => {
@@ -2927,16 +2923,10 @@
       const widthPct = (p.dur / cols) * 100;
       const isGoLive = p.key === 'commission';
       const barClass = isGoLive ? 'go-live-bar' : p.color;
-      // Vertical grid lines in bar area — one per month boundary
-      let gridLines = '';
-      for (let m = 0; m <= cols; m++) {
-        gridLines += `<div class="gantt-grid-line" style="left:${(m/cols)*100}%"></div>`;
-      }
       rows += `
-        <div class="gantt-row" style="grid-template-columns: 148px 1fr">
+        <div class="gantt-row" style="grid-template-columns: 150px 1fr">
           <div class="gantt-label"><strong>${p.label}</strong>${p.dur === 1 ? '~4 wks' : '~' + (p.dur * 4) + ' wks'}</div>
           <div class="gantt-bar-area">
-            ${gridLines}
             ${isGoLive ? `<div class="gantt-go-live-line" style="left:${((p.start + p.dur) / cols) * 100}%"></div><div class="gantt-go-live-label" style="left:${((p.start + p.dur) / cols) * 100}%">GO-LIVE</div>` : ''}
             <div class="gantt-bar ${barClass}" style="left:${leftPct}%;width:${widthPct}%">${p.dur >= 2 ? p.label.split(' ')[0] : ''}</div>
           </div>
@@ -2944,7 +2934,9 @@
     });
 
     grid.innerHTML = `
-      <div class="gantt-months-row">${monthLabels}</div>
+      <div class="gantt-months-row" style="grid-template-columns: 150px repeat(${cols}, 1fr)">
+        <div></div>${monthLabels}
+      </div>
       ${rows}`;
 
     // Legend
@@ -2966,7 +2958,7 @@
 
   async function downloadPDF() {
     if (!calculationData) return;
-    try {
+
     // Always produce a 2-page PDF: page 1 = Self-Funded, page 2 = PPA
     // Ensure ppaData is available — compute on the fly if user hasn't visited PPA tab
     let livePpaData = ppaData;
@@ -2982,7 +2974,7 @@
     }
 
     // Page 1: Self-Funded
-    const doc = await buildSelfFundedPDFDoc(livePpaData);
+    const doc = await buildSelfFundedPDFDoc();
 
     // Page 2: PPA — add a new page and draw PPA content directly into the same doc
     doc.addPage();
@@ -2993,158 +2985,202 @@
     drawTimelinePDFPage(doc);
 
     doc.save('Solar-Proposal-' + calculationData.date.replace(/\//g, '-') + '.pdf');
-    } catch(e) { console.error('PDF generation error:', e); }
   }
 
   function drawTimelinePDFPage(doc) {
     if (!calculationData) return;
     const PW = 210, PH = 297;
     const ML = 14, MR = 14;
+
+    // ── Palette (white-background, print-friendly)
     const AMBER  = [245, 158, 11];
+    const SKY    = [14, 165, 233];
     const BG     = [255, 255, 255];
-    const LGREY2 = [220, 220, 220];
-    const DGREY2 = [60, 60, 60];
-    const MGREY2 = [120, 120, 120];
+    const LGREY  = [220, 220, 220];
+    const DGREY  = [50, 50, 50];
+    const MGREY  = [120, 120, 120];
     const BGBOX  = [248, 250, 252];
     const BGBOX2 = [241, 245, 249];
+
     const colorMap = {
-      amber:  { fill: [255, 237, 180], stroke: [200, 130, 10],  text: [140, 80, 0]   },
-      sky:    { fill: [186, 230, 253], stroke: [14, 165, 233],  text: [3, 105, 161]  },
-      green:  { fill: [167, 243, 208], stroke: [16, 185, 129],  text: [4, 120, 87]   },
-      purple: { fill: [221, 214, 254], stroke: [124, 58, 237],  text: [91, 33, 182]  },
-      rose:   { fill: [254, 205, 211], stroke: [225, 29, 72],   text: [159, 18, 57]  },
-      teal:   { fill: [153, 246, 228], stroke: [13, 148, 136],  text: [15, 118, 110] },
+      amber:  { fill: [255, 237, 180], stroke: [200, 130, 10],  text: [140, 80,  0]   },
+      sky:    { fill: [186, 230, 253], stroke: [14,  165, 233], text: [3,   105, 161] },
+      green:  { fill: [167, 243, 208], stroke: [16,  185, 129], text: [4,   120, 87]  },
+      purple: { fill: [221, 214, 254], stroke: [124, 58,  237], text: [91,  33,  182] },
+      rose:   { fill: [254, 205, 211], stroke: [225, 29,  72],  text: [159, 18,  57]  },
+      teal:   { fill: [153, 246, 228], stroke: [13,  148, 136], text: [15,  118, 110] },
     };
 
     const kwp      = calculationData.results.systemSizeKw;
     const roofType = calculationData.inputs.roofType;
-
-    // Compute both timelines
-    const tlSF  = computeTimeline(kwp, roofType, 'selffunded');
-    const tlPPA = computeTimeline(kwp, roofType, 'ppa');
+    const tlSF     = computeTimeline(kwp, roofType, 'selffunded');
+    const tlPPA    = computeTimeline(kwp, roofType, 'ppa');
     const needsNESO = tlSF.needsNESO;
 
     // ── White background
     doc.setFillColor(...BG);
     doc.rect(0, 0, PW, PH, 'F');
 
-    // ── Header bar (light grey)
-    doc.setFillColor(245, 247, 250);
-    doc.rect(0, 0, PW, 26, 'F');
-
-    // Top accent stripe
+    // ── Amber top stripe (2.5mm — same as pages 1 & 2)
     doc.setFillColor(...AMBER);
-    doc.rect(0, 0, PW, 2, 'F');
+    doc.rect(0, 0, PW, 2.5, 'F');
+
+    // ── Light grey header band (starts AFTER stripe)
+    doc.setFillColor(245, 247, 250);
+    doc.rect(0, 2.5, PW, 26, 'F');
 
     // Header text
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(13);
-    doc.setTextColor(...AMBER);
-    doc.text('PROJECT TIMELINE', ML, 11);
+    doc.setTextColor(20, 20, 20);
+    doc.text('PROJECT TIMELINE', ML, 14);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.setTextColor(...MGREY2);
-    doc.text('Kinetic Energy Consulting  |  From Initial Enquiry to Go-Live', ML, 17);
-    doc.text('Generated: ' + calculationData.date, ML, 22);
+    doc.setFontSize(7.5);
+    doc.setTextColor(...MGREY);
+    doc.text('Kinetic Energy Consulting  —  Self-Funded & PPA Comparison', ML, 20);
+    doc.text('Generated: ' + calculationData.date, ML, 25.5);
 
-    // Logo — stays within header, does not overlap amber stripe or orange border
+    // Logo — sits within the header band (below stripe), right-aligned, does NOT overlap stripe
     try {
       const logoImg = document.querySelector('.logo-area img');
       if (logoImg && logoImg.src) {
-        doc.addImage(logoImg.src, 'PNG', PW - MR - 20, 4, 16, 16);
+        // y=3 places top of logo just below the 2.5mm stripe, well clear of border
+        doc.addImage(logoImg.src, 'PNG', PW - MR - 22, 3, 19, 19);
       }
     } catch(e) {}
 
-    // Header separator line
-    doc.setDrawColor(...LGREY2);
+    // Header separator
+    doc.setDrawColor(...LGREY);
     doc.setLineWidth(0.4);
-    doc.line(ML, 26, PW - MR, 26);
+    doc.line(ML, 28.5, PW - MR, 28.5);
 
-    let currentY = 30;
+    // ── System summary box (fits fully within its bounds)
+    const statsY = 32;
+    const statsH = 16;
+    doc.setFillColor(...BGBOX);
+    doc.roundedRect(ML, statsY, PW - ML - MR, statsH, 2, 2, 'F');
+    doc.setDrawColor(...AMBER);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(ML, statsY, PW - ML - MR, statsH, 2, 2, 'S');
 
-    // NESO Warning (if needed)
+    const mountLabel = { pitched: 'Pitched Roof', flat: 'Flat Roof', ground: 'Ground Mount', carport: 'Carport' }[roofType] || roofType;
+
+    // Labels row
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6.5);
+    doc.setTextColor(...MGREY);
+    doc.text('SYSTEM SIZE',     ML + 5,   statsY + 5.5);
+    doc.text('MOUNT TYPE',      ML + 42,  statsY + 5.5);
+    doc.text('SF DURATION',     ML + 86,  statsY + 5.5);
+    doc.text('SF GO-LIVE',      ML + 117, statsY + 5.5);
+    doc.text('PPA DURATION',    ML + 143, statsY + 5.5);
+    doc.text('PPA GO-LIVE',     ML + 164, statsY + 5.5);
+
+    // Values row
+    doc.setFontSize(8.5);
+    doc.setTextColor(180, 100, 0);
+    doc.text(kwp.toFixed(0) + ' kWp',  ML + 5,   statsY + 12);
+    doc.setTextColor(...DGREY);
+    doc.text(mountLabel,                ML + 42,  statsY + 12);
+    doc.setTextColor(180, 100, 0);
+    doc.text(tlSF.totalMonths + ' mo',  ML + 86,  statsY + 12);
+    doc.setTextColor(0, 120, 80);
+    doc.text(tlSF.goLiveDate.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }), ML + 117, statsY + 12);
+    doc.setTextColor(180, 100, 0);
+    doc.text(tlPPA.totalMonths + ' mo', ML + 143, statsY + 12);
+    doc.setTextColor(0, 120, 80);
+    doc.text(tlPPA.goLiveDate.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }), ML + 164, statsY + 12);
+
+    let currentY = statsY + statsH + 4;
+
+    // NESO Warning
     if (needsNESO) {
       doc.setFillColor(255, 248, 230);
-      doc.roundedRect(ML, currentY, PW - ML - MR, 14, 2, 2, 'F');
+      doc.roundedRect(ML, currentY, PW - ML - MR, 13, 2, 2, 'F');
       doc.setDrawColor(...AMBER);
       doc.setLineWidth(0.4);
-      doc.roundedRect(ML, currentY, PW - ML - MR, 14, 2, 2, 'S');
+      doc.roundedRect(ML, currentY, PW - ML - MR, 13, 2, 2, 'S');
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(7);
       doc.setTextColor(160, 80, 0);
-      doc.text('! LARGE SYSTEM — NESO INVOLVEMENT REQUIRED', ML + 5, currentY + 5.5);
+      doc.text('! LARGE SYSTEM — NESO INVOLVEMENT REQUIRED', ML + 4, currentY + 5);
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6.2);
+      doc.setFontSize(6);
       doc.setTextColor(120, 70, 0);
-      doc.text('This system exceeds 5MWp. Grid connection escalates to NESO, adding approx. 6 months to the timeline.', ML + 5, currentY + 10.5);
-      currentY += 18;
+      doc.text('System exceeds 5MWp. Grid connection escalates to NESO, adding ~6 months to DNO approval on both routes.', ML + 4, currentY + 10);
+      currentY += 17;
     }
 
-    // Helper: draw a gantt section
+    // ── Helper: draw one Gantt block
     function drawGantt(tl, title, accentColor, startY) {
-      const { phases, totalMonths, goLiveDate } = tl;
-      const labelW = 42;
-      const barAreaW = PW - ML - MR - labelW - 4;
-      const rowH = 9;
-      const barH = 5.5;
-      const cols = totalMonths;
+      const { phases, totalMonths } = tl;
+      const labelW   = 42;
+      const barAreaW = PW - ML - MR - labelW - 3;
+      const rowH     = 8.5;
+      const barH     = 5;
+      const cols     = totalMonths;
+      const headerH  = 7;
 
       // Section title bar
-      const lightBg = accentColor.map(v => Math.min(255, v + 180));
-      doc.setFillColor(...lightBg);
-      doc.rect(ML, startY, PW - ML - MR, 8, 'F');
+      doc.setFillColor(accentColor[0], accentColor[1], accentColor[2], 0.12);
+      doc.setFillColor(...(accentColor === AMBER ? [255, 247, 230] : [230, 246, 255]));
+      doc.rect(ML, startY, PW - ML - MR, headerH, 'F');
       doc.setFillColor(...accentColor);
-      doc.rect(ML, startY, 3, 8, 'F');
+      doc.rect(ML, startY, 3, headerH, 'F');
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.5);
+      doc.setFontSize(8);
       doc.setTextColor(...accentColor);
-      doc.text(title, ML + 6, startY + 5.5);
+      doc.text(title, ML + 6, startY + headerH - 2);
 
-      // Duration + go-live on the right
+      // Duration badge
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6.5);
-      doc.setTextColor(...MGREY2);
-      const summaryTxt = 'Total: ' + totalMonths + ' months  |  Est. Go-Live: ' + goLiveDate.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
-      doc.text(summaryTxt, PW - MR, startY + 5.5, { align: 'right' });
+      doc.setFontSize(7);
+      doc.setTextColor(...MGREY);
+      doc.text('Total: ' + totalMonths + ' months  |  Est. Go-Live: ' +
+        tl.goLiveDate.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }),
+        ML + 80, startY + headerH - 2);
 
-      let gy = startY + 12;
+      const ganttY = startY + headerH + 5;
 
       // Month header background
       doc.setFillColor(...BGBOX2);
-      doc.rect(ML + labelW + 4, gy - 4, barAreaW, 6.5, 'F');
+      doc.rect(ML + labelW + 3, ganttY - 4, barAreaW, 6, 'F');
 
       // Month labels + grid lines
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(5);
-      doc.setTextColor(...MGREY2);
+      doc.setTextColor(...MGREY);
       for (let m = 0; m < cols; m++) {
-        const x = ML + labelW + 4 + (m / cols) * barAreaW;
-        const cw = barAreaW / cols;
-        doc.text('M' + (m + 1), x + cw / 2, gy, { align: 'center' });
+        const x   = ML + labelW + 3 + (m / cols) * barAreaW;
+        const colW = barAreaW / cols;
+        doc.text('M' + (m + 1), x + colW / 2, ganttY - 0.5, { align: 'center' });
         doc.setDrawColor(210, 210, 210);
         doc.setLineWidth(0.1);
-        doc.line(x, gy + 1.5, x, gy + 1.5 + phases.length * rowH);
+        doc.line(x, ganttY + 1, x, ganttY + 1 + phases.length * rowH);
       }
 
       // Phase rows
       phases.forEach((p, i) => {
-        const rowY = gy + 3 + i * rowH;
+        const rowY = ganttY + 2 + i * rowH;
         const isGoLive = p.key === 'commission';
         const cm = isGoLive ? colorMap.green : (colorMap[p.color] || colorMap.amber);
 
+        // Alternating stripe
         if (i % 2 === 0) {
-          doc.setFillColor(250, 251, 252);
-          doc.rect(ML, rowY - 1, PW - ML - MR, rowH, 'F');
+          doc.setFillColor(251, 252, 253);
+          doc.rect(ML, rowY - 0.5, PW - ML - MR, rowH, 'F');
         }
 
+        // Label
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(5.4);
-        doc.setTextColor(...DGREY2);
-        const lbl = p.label.length > 22 ? p.label.substring(0, 21) + '…' : p.label;
-        doc.text(lbl, ML, rowY + barH / 2 + 1);
+        doc.setFontSize(5.5);
+        doc.setTextColor(...DGREY);
+        const shortLabel = p.label.length > 22 ? p.label.substring(0, 21) + '…' : p.label;
+        doc.text(shortLabel, ML, rowY + barH / 2 + 1);
 
-        const barX = ML + labelW + 4 + (p.start / cols) * barAreaW;
-        const barW = Math.max(2.5, (p.dur / cols) * barAreaW);
+        // Bar
+        const barX = ML + labelW + 3 + (p.start / cols) * barAreaW;
+        const barW = Math.max(3, (p.dur / cols) * barAreaW);
         doc.setFillColor(...cm.fill);
         doc.roundedRect(barX, rowY, barW, barH, 0.8, 0.8, 'F');
         doc.setDrawColor(...cm.stroke);
@@ -3153,70 +3189,70 @@
 
         if (barW > 12) {
           doc.setFont('helvetica', 'bold');
-          doc.setFontSize(4.2);
+          doc.setFontSize(4.5);
           doc.setTextColor(...cm.text);
-          doc.text(p.dur === 1 ? '~4wk' : '~' + (p.dur * 4) + 'wk', barX + barW / 2, rowY + barH / 2 + 1.3, { align: 'center' });
+          doc.text(p.dur === 1 ? '~4wk' : '~' + (p.dur * 4) + 'wk', barX + barW / 2, rowY + barH / 2 + 1.5, { align: 'center' });
         }
 
+        // Go-live marker
         if (isGoLive) {
-          const glX = ML + labelW + 4 + ((p.start + p.dur) / cols) * barAreaW;
+          const glX = ML + labelW + 3 + ((p.start + p.dur) / cols) * barAreaW;
           doc.setDrawColor(16, 185, 129);
           doc.setLineWidth(0.5);
-          doc.line(glX, gy - 4, glX, rowY + barH + 1);
+          doc.line(glX, ganttY - 4, glX, rowY + barH + 1);
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(4.5);
           doc.setTextColor(4, 120, 87);
-          doc.text('GO-LIVE', glX + 1, gy - 1);
+          doc.text('GO-LIVE', glX + 1, ganttY - 1);
         }
       });
 
-      return gy + 3 + phases.length * rowH + 4;
+      return ganttY + 2 + phases.length * rowH + 4;
     }
 
-    // Draw Self-Funded gantt
-    currentY = drawGantt(tlSF, 'Self-Funded (Capex) — Project Timeline', [0, 90, 160], currentY);
+    // Draw Self-Funded Gantt
+    currentY = drawGantt(tlSF, 'Self-Funded (Capital Purchase)', AMBER, currentY);
+    currentY += 4;
+
+    // Draw PPA Gantt
+    currentY = drawGantt(tlPPA, 'Power Purchase Agreement (PPA)', SKY, currentY);
     currentY += 6;
 
-    // Divider
-    doc.setDrawColor(...LGREY2);
-    doc.setLineWidth(0.3);
-    doc.line(ML, currentY, PW - MR, currentY);
-    currentY += 6;
-
-    // Draw PPA gantt
-    currentY = drawGantt(tlPPA, 'PPA (Power Purchase Agreement) — Project Timeline', [0, 130, 100], currentY);
-    currentY += 8;
-
-    // DNO/NESO explanatory note
+    // ── DNO/NESO note
     const noteH = 20;
-    doc.setFillColor(239, 246, 255);
-    doc.roundedRect(ML, currentY, PW - ML - MR, noteH, 2, 2, 'F');
-    doc.setDrawColor(14, 165, 233);
-    doc.setLineWidth(0.3);
-    doc.roundedRect(ML, currentY, PW - ML - MR, noteH, 2, 2, 'S');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(6.5);
-    doc.setTextColor(3, 105, 161);
-    doc.text('What is the DNO / NESO?', ML + 5, currentY + 6);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6);
-    doc.setTextColor(...DGREY2);
-    const dnoLines = doc.splitTextToSize(
-      'The DNO (Distribution Network Operator) is your local electricity network company — they approve and manage how your solar system connects to the grid. For systems over 5MWp, responsibility escalates to the NESO (National Energy System Operator), which coordinates connections at national infrastructure level. DNO approval typically takes around 12 weeks; NESO involvement adds a further 6 months or more.',
-      PW - ML - MR - 10
-    );
-    doc.text(dnoLines, ML + 5, currentY + 12);
+    if (currentY + noteH < PH - 12) {
+      doc.setFillColor(239, 246, 255);
+      doc.roundedRect(ML, currentY, PW - ML - MR, noteH, 2, 2, 'F');
+      doc.setDrawColor(...SKY);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(ML, currentY, PW - ML - MR, noteH, 2, 2, 'S');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(6.5);
+      doc.setTextColor(3, 105, 161);
+      doc.text('What is the DNO / NESO?', ML + 4, currentY + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6);
+      doc.setTextColor(...DGREY);
+      const dnoLines = doc.splitTextToSize(
+        'The DNO (Distribution Network Operator) is your local electricity network company — they approve and manage how your solar system connects to the grid. For systems over 5MWp, responsibility escalates to NESO (National Energy System Operator), adding ~6 months to approval. Timelines shown are indicative.',
+        PW - ML - MR - 8
+      );
+      doc.text(dnoLines, ML + 4, currentY + 12);
+    }
 
-    // Footer
+    // ── Footer — amber bar matching pages 1 & 2
     doc.setFillColor(...AMBER);
     doc.rect(0, PH - 3, PW, 3, 'F');
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(5.8);
-    doc.setTextColor(...MGREY2);
-    doc.text('Kinetic Energy Consulting  |  martynsheridan621@gmail.com  |  07872 015769  |  Timeline is indicative — actual durations subject to site, council, and DNO variables.', ML, PH - 6);
+    doc.setFontSize(6);
+    doc.setTextColor(...MGREY);
+    doc.text(
+      'Kinetic Energy Consulting  |  martynsheridan621@gmail.com  |  07872 015769  |  Timeline is indicative — actual durations subject to site, council, and DNO variables.',
+      ML, PH - 6
+    );
   }
 
-  async function buildSelfFundedPDFDoc(ppaDataArg) {
+  async function buildSelfFundedPDFDoc() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const r   = calculationData.results;
@@ -3290,11 +3326,11 @@
     T('normal', 8, MGREY);
     doc.text('Generated: ' + calculationData.date, PW / 2, 20, { align: 'center' });
 
-    // Logo top-right corner — positioned inside header, clear of amber stripe and border
+    // Logo top-right corner — starts below the 2.5mm amber stripe
     try {
       const logoImg = document.querySelector('.logo-area img');
       if (logoImg && logoImg.src) {
-        doc.addImage(logoImg.src, 'PNG', PW - MR - 18, 4, 16, 16);
+        doc.addImage(logoImg.src, 'PNG', PW - MR - 21, 3, 19, 19);
       }
     } catch(e) {}
 
@@ -3353,9 +3389,9 @@
     doc.text('Break-Even Analysis: Cumulative Savings vs Initial Investment', PW / 2, chartY, { align: 'center' });
     chartY += 4;
 
-    // Build SF break-even chart (single line) for page 1 and capture
+    // Ensure SF chart is shown before capture — wait for Chart.js to finish rendering
     buildChart('selffunded', r.totalCost, r.yearlySavings, r.paybackYear || 30, null, null);
-    await new Promise(resolve => setTimeout(resolve, 120));
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const chartImg = document.getElementById('savingsChart').toDataURL('image/png');
     const chartH   = 58;
     doc.addImage(chartImg, 'PNG', ML, chartY, CW, chartH);
@@ -3487,10 +3523,10 @@
     T('bold', 17, BLACK); doc.text('Industrial & Commercial Solar — PPA Analysis', ML, 13);
     T('normal', 9, SLATE); doc.text('Power Purchase Agreement  —  Indicative Proposal', ML, 20);
     T('normal', 8, MGREY); doc.text('Generated: ' + calculationData.date, PW / 2, 20, { align: 'center' });
-    // Logo top-right corner — positioned inside header, clear of amber stripe and border
+    // Logo top-right corner — starts below the 2.5mm sky stripe
     try {
       const logoImg = document.querySelector('.logo-area img');
-      if (logoImg && logoImg.src) { doc.addImage(logoImg.src, 'PNG', PW - MR - 18, 4, 16, 16); }
+      if (logoImg && logoImg.src) { doc.addImage(logoImg.src, 'PNG', PW - MR - 21, 3, 19, 19); }
     } catch(e) {}
     doc.setDrawColor(...LGREY); doc.setLineWidth(0.4); doc.line(ML, 24, PW - MR, 24);
 
@@ -3534,15 +3570,15 @@
     T('bold', 9, BLUE);
     doc.text('30-Year Cumulative Savings: Self-Funded vs PPA', PW / 2, chartY, { align: 'center' });
     chartY += 4;
-    // Build PPA two-line comparison chart for page 2 and capture
+    // Build PPA-mode chart and capture it — wait for Chart.js to finish rendering
     const r2 = calculationData.results;
     buildChart('ppa', r2.totalCost, r2.yearlySavings, r2.paybackYear || 30, ppa.yearlySavings, ppa.contractYears);
-    await new Promise(resolve => setTimeout(resolve, 120));
-    const chartImg2 = document.getElementById('savingsChart').toDataURL('image/png');
-    doc.addImage(chartImg2, 'PNG', ML, chartY, CW, 58);
-    chartY += 63;
-    // Restore SF chart after capture
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const chartImg = document.getElementById('savingsChart').toDataURL('image/png');
+    // Restore SF chart
     buildChart('selffunded', r2.totalCost, r2.yearlySavings, r2.paybackYear || 30, null, null);
+    doc.addImage(chartImg, 'PNG', ML, chartY, CW, 58);
+    chartY += 63;
 
     // ASSUMPTIONS
     doc.setDrawColor(...LGREY); doc.setLineWidth(0.4); doc.line(ML, chartY, PW - MR, chartY);
@@ -3604,6 +3640,264 @@
     if (!calculationData) return;
     const doc = await buildPPAPDFDoc();
     doc.save('PPA-Proposal-' + calculationData.date.replace(/\//g, '-') + '.pdf');
+  }
+
+  // ── SUPPORTING NOTES PDF ─────────────────────────────────────────────
+  function downloadSupportingNotes() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const PW = 210, PH = 297;
+    const ML = 14, MR = 14;
+    const CW = PW - ML - MR;
+
+    // Palette
+    const AMBER  = [245, 158, 11];
+    const SKY    = [14, 165, 233];
+    const BLACK  = [20, 20, 20];
+    const DGREY  = [60, 60, 60];
+    const MGREY  = [120, 120, 120];
+    const LGREY  = [210, 210, 210];
+    const BGBOX  = [248, 250, 252];
+    const BGBLUE = [235, 244, 255];
+
+    // Typography helper
+    function T(style, size, color) {
+      doc.setFont('helvetica', style);
+      doc.setFontSize(size);
+      doc.setTextColor(...color);
+    }
+
+    // Section heading — left amber strip + tinted bg
+    function sectionHead(title, y) {
+      doc.setFillColor(255, 247, 230);
+      doc.rect(ML, y, CW, 7.5, 'F');
+      doc.setFillColor(...AMBER);
+      doc.rect(ML, y, 3, 7.5, 'F');
+      T('bold', 9, AMBER);
+      doc.text(title, ML + 6, y + 5.5);
+      return y + 7.5 + 4;
+    }
+
+    // Paragraph helper — wraps text, returns new y
+    function para(text, y, size, color, indent) {
+      size  = size  || 8;
+      color = color || DGREY;
+      indent = indent || 0;
+      T('normal', size, color);
+      const lines = doc.splitTextToSize(text, CW - indent);
+      doc.text(lines, ML + indent, y);
+      return y + lines.length * (size * 0.42) + 3;
+    }
+
+    // Bold inline label + normal text, same line run-on
+    function labelPara(label, text, y) {
+      T('bold', 8, BLACK);
+      doc.text(label + ' ', ML, y);
+      const labelW = doc.getTextWidth(label + ' ');
+      T('normal', 8, DGREY);
+      const lines = doc.splitTextToSize(text, CW - labelW);
+      doc.text(lines, ML + labelW, y);
+      return y + Math.max(1, lines.length) * 3.5 + 2.5;
+    }
+
+    // Draw page header
+    function drawHeader(doc, pageNum) {
+      // White bg
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, PW, PH, 'F');
+      // Amber stripe
+      doc.setFillColor(...AMBER);
+      doc.rect(0, 0, PW, 2.5, 'F');
+      // Light header band
+      doc.setFillColor(245, 247, 250);
+      doc.rect(0, 2.5, PW, 25, 'F');
+      // Title
+      T('bold', 14, BLACK);
+      doc.text('Solar Energy — Supporting Notes & User Guide', ML, 14);
+      T('normal', 8, MGREY);
+      doc.text('Kinetic Energy Consulting  —  Industrial & Commercial Solar', ML, 21);
+      // Logo
+      try {
+        const logoImg = document.querySelector('.logo-area img');
+        if (logoImg && logoImg.src) doc.addImage(logoImg.src, 'PNG', PW - MR - 21, 3, 19, 19);
+      } catch(e) {}
+      // Separator
+      doc.setDrawColor(...LGREY);
+      doc.setLineWidth(0.3);
+      doc.line(ML, 27.5, PW - MR, 27.5);
+      // Page number
+      T('normal', 6.5, MGREY);
+      doc.text('Page ' + pageNum, PW - MR, 24, { align: 'right' });
+    }
+
+    // Draw page footer
+    function drawFooter(doc) {
+      doc.setFillColor(...AMBER);
+      doc.rect(0, PH - 3, PW, 3, 'F');
+      T('normal', 6, MGREY);
+      doc.text('Kinetic Energy Consulting  |  martynsheridan621@gmail.com  |  07872 015769  |  For information purposes only — not a formal quotation or guarantee of performance.', ML, PH - 6);
+    }
+
+    // ════════════════════════════════
+    // PAGE 1
+    // ════════════════════════════════
+    drawHeader(doc, 1);
+    drawFooter(doc);
+    let y = 33;
+
+    // About This Calculator
+    y = sectionHead('About This Calculator', y);
+    y = para('The Kinetic Energy Consulting Solar Calculator is designed to give commercial and industrial businesses a fast, credible first look at what a solar installation might mean for their site — in terms of system size, cost, savings, carbon impact, and project timeline. It is built specifically for the UK market and handles everything from a single rooftop to a multi-building portfolio.', y);
+    y = para('It is, however, exactly what it says it is: a calculator. It works from the information you enter and applies standard industry assumptions to produce indicative outputs. It is not a survey, a design, or a formal quote. The numbers it generates should be treated as a useful starting point for a conversation, not a contractual figure.', y);
+    y += 3;
+
+    // How the Calculator Works
+    y = sectionHead('How the Calculator Works', y);
+    y = para('You provide basic information about your site — roof area, roof type, location, and current energy price — and the calculator estimates the maximum system size, annual generation based on regional solar irradiance data, and models the financial picture over 30 years under two funding routes.', y);
+    y = para('Core assumptions: panels are 450W modules (~2.57 m² each); the system operates at 85% efficiency; generation degrades at 2% per year; energy prices rise at 3% per year; and 80% of generation is consumed on-site. These figures are deliberately conservative — in practice, many sites perform better.', y);
+    y += 3;
+
+    // Limitations
+    y = sectionHead('Limitations & Caveats', y);
+    y = labelPara('Roof area is the starting point, not the end point.', 'The calculator applies a standard coverage factor by roof type. It cannot account for rooflights, plant, drainage outlets, access hatches, or structural constraints. Usable area is typically 60–85% of the gross figure; the calculator assumes 80%.', y);
+    y = labelPara('Shading is not modelled.', 'The calculator assumes a reasonably unobstructed roof. Significant shading from adjacent buildings, rooftop plant, or trees will reduce actual generation below the figures shown. A full shading analysis is part of any proper design.', y);
+    y = labelPara('Energy prices are an estimate.', 'Most commercial businesses pay 18p–28p per kWh depending on contract type and tariff structure. Use a figure from your most recent bill. Savings modelled are directly sensitive to this input.', y);
+    y = labelPara('Grid connection varies.', 'Every site requires a DNO application. Time and cost depend on local network capacity, system size, and the current application queue. For systems over 5MWp, the process escalates to NESO, adding significant time.', y);
+    y = labelPara('Planning permission.', 'Most rooftop installations fall within permitted development rights. Ground-mounted systems and carports typically require planning permission. Permitted development rights can be removed by Article 4 directions — always check with your local planning authority early.', y);
+    y = labelPara('Export tariffs not included.', 'The calculator models self-consumed energy only. Electricity exported to the grid via a Smart Export Guarantee (SEG) arrangement is not included and represents additional upside a detailed proposal would capture.', y);
+
+    // ════════════════════════════════
+    // PAGE 2
+    // ════════════════════════════════
+    doc.addPage();
+    drawHeader(doc, 2);
+    drawFooter(doc);
+    y = 33;
+
+    // Self-Funded vs PPA
+    y = sectionHead('Self-Funded vs Power Purchase Agreement (PPA)', y);
+    y = para('The calculator models two fundamentally different ways of financing a solar installation. Both result in the same solar panels on your roof generating the same energy — the difference is entirely about who owns the system and how you pay for it.', y);
+    y += 2;
+
+    // SF box
+    doc.setFillColor(255, 251, 235);
+    doc.roundedRect(ML, y, CW, 42, 2, 2, 'F');
+    doc.setDrawColor(...AMBER);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(ML, y, CW, 42, 2, 2, 'S');
+    doc.setFillColor(...AMBER);
+    doc.rect(ML, y, 3, 42, 'F');
+    T('bold', 9, AMBER);
+    doc.text('Self-Funded (Capital Purchase)', ML + 7, y + 6);
+    T('normal', 7.8, DGREY);
+    const sfText = doc.splitTextToSize('You purchase and own the solar system outright — either as upfront capital or via a finance lease. In return you receive 100% of the financial benefit: lower energy bills from day one, full ownership of any export revenue, and an asset on your balance sheet. The payback period for a well-sized commercial system in the UK is typically six to ten years, after which the system continues generating effectively free electricity for the remaining panel life of 25 to 30 years.\n\nCapital cost varies depending on system size, roof type, and site complexity. Installations requiring more civil engineering — structural supports, ground preparation, bespoke mounting — naturally cost more per kWp than a straightforward rooftop installation. A detailed proposal will include a fully itemised cost breakdown specific to your site.', CW - 10);
+    doc.text(sfText, ML + 7, y + 12);
+    y += 46;
+
+    y += 3;
+
+    // PPA box
+    doc.setFillColor(230, 248, 255);
+    doc.roundedRect(ML, y, CW, 50, 2, 2, 'F');
+    doc.setDrawColor(...SKY);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(ML, y, CW, 50, 2, 2, 'S');
+    doc.setFillColor(...SKY);
+    doc.rect(ML, y, 3, 50, 'F');
+    T('bold', 9, SKY);
+    doc.text('Power Purchase Agreement (PPA)', ML + 7, y + 6);
+    T('normal', 7.8, DGREY);
+    const ppaText = doc.splitTextToSize('A PPA is a zero-capital alternative. A third-party funder owns, installs, and maintains the solar system on your roof at no upfront cost to you. In return, you agree to purchase the electricity it generates at a fixed rate — the PPA rate — set below your current grid tariff. You benefit from cheaper electricity immediately, without any capital outlay.\n\nPPA contracts typically run for 10 to 25 years. The longer the contract, the lower the PPA rate you can negotiate. At the end of the contract term, the PPA provider will typically transfer ownership of the asset to you at no further cost. Should you prefer not to take ownership, you can request that the system be removed instead.\n\nA PPA delivers savings from day one with no risk, but the total financial benefit over the system\'s lifetime is lower than ownership — you share the upside with the funder. For capital-constrained businesses, or those wanting a hassle-free arrangement, a PPA is often the right answer. For those with access to capital and a longer-term view, self-funded ownership is almost always more financially rewarding.', CW - 10);
+    doc.text(ppaText, ML + 7, y + 12);
+    y += 54;
+
+    y += 5;
+
+    // Types of Solar
+    y = sectionHead('Types of Solar Installation', y);
+
+    const types = [
+      ['Pitched Roof', 'The most common configuration for industrial units, warehouses, and agricultural buildings. Panels are mounted on frames fixed to the roof structure and tilted to follow the pitch. Installation is straightforward and generally the most cost-effective configuration, with minimal civil engineering requirements.'],
+      ['Flat Roof', 'Most modern commercial and retail buildings have flat or near-flat roofs. Panels sit on ballasted frames — weighted structures that avoid penetrating the roof membrane — angled at 10–15 degrees. A structural survey is required to confirm the roof can carry the additional load.'],
+      ['Ground-Mounted', 'Where roof space is limited, arrays can be installed on open land. Easier to optimise for orientation and tilt, but requires planning permission, a ground investigation, and security fencing. Additional civils typically make this a higher cost per kWp than rooftop.'],
+      ['Carport / Canopy', 'Solar canopies over car parks combine energy generation with shaded parking. The most expensive configuration per kWp due to significant civil and structural costs, but offer a compelling dual-use benefit. Popular with retail parks, logistics hubs, and corporate campuses.'],
+    ];
+
+    types.forEach(([title, text]) => {
+      if (y > PH - 40) { doc.addPage(); drawHeader(doc, 3); drawFooter(doc); y = 33; }
+      doc.setFillColor(...BGBOX);
+      doc.setDrawColor(...LGREY);
+      doc.setLineWidth(0.25);
+      const lines = doc.splitTextToSize(text, CW - 26);
+      const boxH = lines.length * 3.3 + 12;
+      doc.roundedRect(ML, y, CW, boxH, 1.5, 1.5, 'FD');
+      T('bold', 8.5, BLACK);
+      doc.text(title, ML + 5, y + 6);
+      T('normal', 7.5, DGREY);
+      doc.text(lines, ML + 5, y + 11);
+      y += boxH + 4;
+    });
+
+    // ════════════════════════════════
+    // PAGE 3
+    // ════════════════════════════════
+    doc.addPage();
+    drawHeader(doc, 3);
+    drawFooter(doc);
+    y = 33;
+
+    // Why Install Solar
+    y = sectionHead('Why Install Solar?', y);
+    y = para('The case for commercial solar in the UK has rarely been stronger, for several reasons that go beyond simple energy bill savings.', y);
+
+    const whyPoints = [
+      ['Energy cost certainty.', 'Energy costs remain high and volatile. The events of the last few years have demonstrated that reliance on grid electricity at market rates carries real business risk. Solar provides a degree of price certainty — particularly under a PPA — and reduces exposure to wholesale market fluctuations.'],
+      ['Carbon and compliance.', 'With Scope 2 emissions reduction becoming a regulatory and reputational requirement — through ESOS, SECR, net-zero commitments, or customer supply chain requirements — on-site renewable generation is one of the most direct and measurable actions available.'],
+      ['Mature technology, competitive market.', 'Solar panels have been commercially deployed at scale for over two decades. Failure rates are low, warranties are long, and the UK installer market is well-developed. The risk profile of a commercial solar installation is low relative to most capital investments.'],
+      ['Compelling economics.', 'A well-designed commercial solar system delivers a genuine, measurable return on investment over a predictable timeframe. Unlike many capital projects, the output — kilowatt hours of electricity — can be calculated with reasonable confidence before a panel is laid.'],
+    ];
+
+    whyPoints.forEach(([label, text]) => {
+      y = labelPara(label, text, y);
+    });
+
+    y += 5;
+
+    // Next Steps box
+    doc.setFillColor(...BGBLUE);
+    doc.roundedRect(ML, y, CW, 58, 2, 2, 'F');
+    doc.setDrawColor(0, 90, 160);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(ML, y, CW, 58, 2, 2, 'S');
+    doc.setFillColor(0, 90, 160);
+    doc.rect(ML, y, 3, 58, 'F');
+    T('bold', 10, [0, 90, 160]);
+    doc.text('Next Steps', ML + 7, y + 8);
+    T('normal', 8, DGREY);
+    const nextText = doc.splitTextToSize('The figures in this calculator are a starting point. To move from an indicative estimate to an accurate proposal, the next step is a no-obligation site survey and design assessment. This will establish the true available roof area, confirm structural suitability, assess shading, and produce a detailed financial model based on your actual energy consumption profile.\n\nTo arrange this, or to discuss any aspect of the calculator outputs, please contact:', CW - 14);
+    doc.text(nextText, ML + 7, y + 16);
+    const contactY = y + 16 + nextText.length * 3.5 + 4;
+    T('bold', 9, BLACK);
+    doc.text('Martyn Sheridan  —  Kinetic Energy Consulting', ML + 7, contactY);
+    T('normal', 8, [0, 90, 160]);
+    doc.text('martynsheridan621@gmail.com', ML + 7, contactY + 6);
+    doc.text('+44 (0) 7872 015769', ML + 7, contactY + 12);
+    y += 63;
+
+    y += 6;
+
+    // Disclaimer
+    doc.setFillColor(252, 252, 252);
+    doc.setDrawColor(...LGREY);
+    doc.setLineWidth(0.25);
+    doc.roundedRect(ML, y, CW, 18, 1.5, 1.5, 'FD');
+    T('bold', 7, MGREY);
+    doc.text('Important Notice', ML + 5, y + 5.5);
+    T('normal', 6.8, MGREY);
+    const discLines = doc.splitTextToSize('This document is provided for information purposes only. All figures are indicative and based on standard industry assumptions. They do not constitute a formal quotation, investment advice, or guarantee of performance. Kinetic Energy Consulting accepts no liability for decisions made solely on the basis of this calculator or these supporting notes.', CW - 10);
+    doc.text(discLines, ML + 5, y + 11);
+
+    doc.save('KEC-Solar-Supporting-Notes.pdf');
   }
 
   // Initialise building rows on page load
